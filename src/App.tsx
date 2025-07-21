@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-
-interface Message {
-  id: string
-  author: string
-  text: string
-  timestamp: Date
-  isOwn: boolean
-}
+import { useChatService } from './hooks/useChatService'
 
 interface ChatRoom {
   id: string
@@ -18,19 +11,7 @@ interface ChatRoom {
 function App() {
   const [currentRoom, setCurrentRoom] = useState<string>('general')
   const [messageText, setMessageText] = useState('')
-  const [messages, setMessages] = useState<Record<string, Message[]>>({
-    general: [
-      {
-        id: '1',
-        author: '系統',
-        text: '歡迎來到聊天室！',
-        timestamp: new Date(Date.now() - 60000),
-        isOwn: false
-      }
-    ],
-    技術討論: [],
-    隨意聊天: []
-  })
+  const { messages, sendMessage } = useChatService()
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -47,47 +28,19 @@ function App() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, currentRoom])
+  }, [messages])
 
-  const sendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageText.trim()) return
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      author: '系統',
-      text: messageText,
-      timestamp: new Date(),
-      isOwn: true
-    }
-
-    setMessages(prev => ({
-      ...prev,
-      [currentRoom]: [...(prev[currentRoom] || []), newMessage]
-    }))
-
+    await sendMessage(messageText, '用戶')
     setMessageText('')
-    
-    // 模擬回覆
-    setTimeout(() => {
-      const replyMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        author: '系統',
-        text: '收到您的訊息！',
-        timestamp: new Date(),
-        isOwn: false
-      }
-      
-      setMessages(prev => ({
-        ...prev,
-        [currentRoom]: [...(prev[currentRoom] || []), replyMessage]
-      }))
-    }, 1000)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      handleSendMessage()
     }
   }
 
@@ -99,7 +52,6 @@ function App() {
   }
 
   const currentRoomData = rooms.find(room => room.id === currentRoom)
-  const currentMessages = messages[currentRoom] || []
 
   return (
     <div className="chat-container">
@@ -132,21 +84,21 @@ function App() {
 
         {/* 訊息區域 */}
         <div className="messages-container">
-          {currentMessages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="welcome-message">
               <div className="welcome-icon">💬</div>
               <p>還沒有任何訊息，開始聊天吧！</p>
             </div>
           ) : (
-            currentMessages.map(message => (
+            messages.map(message => (
               <div key={message.id} className={`message ${message.isOwn ? 'own' : ''}`}>
                 <div className="message-avatar">
-                  {message.isOwn ? '我' : message.author.charAt(0)}
+                  {message.isOwn ? '我' : message.sender.charAt(0)}
                 </div>
                 <div className="message-content">
                   <div className="message-info">
                     <span className="message-author">
-                      {message.isOwn ? '我' : message.author}
+                      {message.isOwn ? '我' : message.sender}
                     </span>
                     <span className="message-time">
                       {formatTime(message.timestamp)}
@@ -175,7 +127,7 @@ function App() {
           />
           <button
             className="send-button"
-            onClick={sendMessage}
+            onClick={handleSendMessage}
             disabled={!messageText.trim()}
           >
             發送
