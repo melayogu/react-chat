@@ -14,10 +14,284 @@ interface TopMenuProps {
   currentRoom: string
 }
 
+interface FormData {
+  name: string
+  email: string
+  phone: string
+  department: string
+  message: string
+  priority: string
+  subscribe: boolean
+}
+
+// 表單模態框組件
+const FormModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    message: '',
+    priority: 'normal',
+    subscribe: false
+  })
+
+  const [errors, setErrors] = useState<Partial<FormData>>({})
+
+  const departments = [
+    { value: '', label: '請選擇部門' },
+    { value: 'tech', label: '技術部' },
+    { value: 'sales', label: '業務部' },
+    { value: 'support', label: '客服部' },
+    { value: 'hr', label: '人力資源部' },
+    { value: 'finance', label: '財務部' }
+  ]
+
+  const priorities = [
+    { value: 'low', label: '低' },
+    { value: 'normal', label: '普通' },
+    { value: 'high', label: '高' },
+    { value: 'urgent', label: '緊急' }
+  ]
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<FormData> = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = '姓名為必填項目'
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = '電子郵件為必填項目'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = '請輸入有效的電子郵件格式'
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = '電話號碼為必填項目'
+    } else if (!/^[\d\-()+ ]+$/.test(formData.phone)) {
+      newErrors.phone = '請輸入有效的電話號碼'
+    }
+
+    if (!formData.department) {
+      newErrors.department = '請選擇部門'
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = '訊息內容為必填項目'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (validateForm()) {
+      // 模擬提交
+      console.log('表單提交成功:', formData)
+      alert('表單提交成功！')
+      
+      // 重置表單
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        department: '',
+        message: '',
+        priority: 'normal',
+        subscribe: false
+      })
+      setErrors({})
+      onClose()
+    }
+  }
+
+  const handleInputChange = (field: keyof FormData, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    
+    // 清除該欄位的錯誤
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }))
+    }
+  }
+
+  const generateSampleData = () => {
+    setFormData({
+      name: '王小明',
+      email: 'wang.xiaoming@example.com',
+      phone: '0912-345-678',
+      department: 'tech',
+      message: '您好，我想詢問關於新產品的技術支援問題。我們公司正在評估貴公司的解決方案，希望能夠安排一次詳細的技術討論會議。',
+      priority: 'high',
+      subscribe: true
+    })
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">聯絡表單</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="form-container">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                姓名 <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                className={`form-input ${errors.name ? 'error' : ''}`}
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="請輸入您的姓名"
+              />
+              {errors.name && <span className="error-message">{errors.name}</span>}
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">
+                電子郵件 <span className="required">*</span>
+              </label>
+              <input
+                type="email"
+                className={`form-input ${errors.email ? 'error' : ''}`}
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="your.email@example.com"
+              />
+              {errors.email && <span className="error-message">{errors.email}</span>}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                電話號碼 <span className="required">*</span>
+              </label>
+              <input
+                type="tel"
+                className={`form-input ${errors.phone ? 'error' : ''}`}
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="0912-345-678"
+              />
+              {errors.phone && <span className="error-message">{errors.phone}</span>}
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">
+                部門 <span className="required">*</span>
+              </label>
+              <select
+                className={`form-input ${errors.department ? 'error' : ''}`}
+                value={formData.department}
+                onChange={(e) => handleInputChange('department', e.target.value)}
+              >
+                {departments.map(dept => (
+                  <option key={dept.value} value={dept.value}>
+                    {dept.label}
+                  </option>
+                ))}
+              </select>
+              {errors.department && <span className="error-message">{errors.department}</span>}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              優先級
+            </label>
+            <div className="radio-group">
+              {priorities.map(priority => (
+                <label key={priority.value} className="radio-label">
+                  <input
+                    type="radio"
+                    name="priority"
+                    value={priority.value}
+                    checked={formData.priority === priority.value}
+                    onChange={(e) => handleInputChange('priority', e.target.value)}
+                    className="radio-input"
+                  />
+                  <span className="radio-text">{priority.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              訊息內容 <span className="required">*</span>
+            </label>
+            <textarea
+              className={`form-textarea ${errors.message ? 'error' : ''}`}
+              value={formData.message}
+              onChange={(e) => handleInputChange('message', e.target.value)}
+              placeholder="請描述您的需求或問題..."
+              rows={4}
+            />
+            {errors.message && <span className="error-message">{errors.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={formData.subscribe}
+                onChange={(e) => handleInputChange('subscribe', e.target.checked)}
+                className="checkbox-input"
+              />
+              <span className="checkbox-text">訂閱最新消息和產品更新</span>
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={generateSampleData}
+            >
+              產生範例資料
+            </button>
+            <div className="form-actions-right">
+              <button
+                type="button"
+                className="btn btn-cancel"
+                onClick={onClose}
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+              >
+                提交表單
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // 頂部選單組件
 const TopMenu = ({ onClearChat, messageCount, currentRoom }: TopMenuProps) => {
   const [showSettings, setShowSettings] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [notifications, setNotifications] = useState(true)
   
   const toggleNotifications = () => {
@@ -63,6 +337,14 @@ const TopMenu = ({ onClearChat, messageCount, currentRoom }: TopMenuProps) => {
             onClick={handleSearch}
           >
             <span className="btn-icon">🔍</span>
+          </button>
+          
+          <button 
+            className="menu-btn" 
+            title="表單整合"
+            onClick={() => setShowForm(true)}
+          >
+            <span className="btn-icon">📝</span>
           </button>
           
           <button 
@@ -115,6 +397,9 @@ const TopMenu = ({ onClearChat, messageCount, currentRoom }: TopMenuProps) => {
           </div>
         </div>
       )}
+      
+      {/* 表單模態框 */}
+      <FormModal isOpen={showForm} onClose={() => setShowForm(false)} />
     </div>
   )
 }
