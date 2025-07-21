@@ -8,10 +8,121 @@ interface ChatRoom {
   onlineCount: number
 }
 
+interface TopMenuProps {
+  onClearChat: () => void
+  messageCount: number
+  currentRoom: string
+}
+
+// 頂部選單組件
+const TopMenu = ({ onClearChat, messageCount, currentRoom }: TopMenuProps) => {
+  const [showSettings, setShowSettings] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [notifications, setNotifications] = useState(true)
+  
+  const toggleNotifications = () => {
+    setNotifications(!notifications)
+    // 這裡可以添加實際的通知設定邏輯
+  }
+  
+  const handleSearch = () => {
+    setShowSearch(!showSearch)
+    // 這裡可以添加搜尋功能
+  }
+  
+  return (
+    <div className="top-menu">
+      <div className="top-menu-left">
+        <div className="app-logo">
+          <span className="logo-icon">💬</span>
+          <span className="app-title">React Chat</span>
+        </div>
+        <div className="breadcrumb">
+          <span className="breadcrumb-item">聊天室</span>
+          <span className="breadcrumb-separator">›</span>
+          <span className="breadcrumb-item current">{currentRoom}</span>
+        </div>
+      </div>
+      
+      <div className="top-menu-right">
+        <div className="menu-stats">
+          <span className="message-count">訊息: {messageCount}</span>
+        </div>
+        
+        <div className="user-status">
+          <div className="user-avatar">
+            <span className="avatar-text">我</span>
+            <div className="status-dot online"></div>
+          </div>
+        </div>
+        
+        <div className="menu-actions">
+          <button 
+            className={`menu-btn ${showSearch ? 'active' : ''}`} 
+            title="搜尋訊息"
+            onClick={handleSearch}
+          >
+            <span className="btn-icon">🔍</span>
+          </button>
+          
+          <button 
+            className={`menu-btn ${notifications ? 'active' : ''}`} 
+            title="通知設定"
+            onClick={toggleNotifications}
+          >
+            <span className="btn-icon">{notifications ? '🔔' : '🔕'}</span>
+          </button>
+          
+          <button className="menu-btn" title="清除聊天記錄" onClick={onClearChat}>
+            <span className="btn-icon">🗑️</span>
+          </button>
+          
+          <div className="menu-dropdown">
+            <button 
+              className="menu-btn" 
+              title="設定"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <span className="btn-icon">⚙️</span>
+            </button>
+            
+            {showSettings && (
+              <div className="dropdown-content">
+                <button className="dropdown-item">個人資料</button>
+                <button className="dropdown-item">主題設定</button>
+                <button className="dropdown-item">語言設定</button>
+                <div className="dropdown-divider"></div>
+                <button className="dropdown-item">登出</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* 搜尋欄 */}
+      {showSearch && (
+        <div className="search-overlay">
+          <div className="search-container">
+            <input 
+              type="text" 
+              placeholder="搜尋訊息..." 
+              className="search-input"
+              autoFocus
+            />
+            <button className="search-close" onClick={() => setShowSearch(false)}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function App() {
   const [currentRoom, setCurrentRoom] = useState<string>('general')
   const [messageText, setMessageText] = useState('')
-  const { messages, sendMessage } = useChatService()
+  const { messages, sendMessage, clearMessages, getMessageCount } = useChatService()
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -44,6 +155,12 @@ function App() {
     }
   }
 
+  const handleClearChat = () => {
+    if (window.confirm('確定要清除所有聊天記錄嗎？')) {
+      clearMessages()
+    }
+  }
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('zh-TW', { 
       hour: '2-digit', 
@@ -54,7 +171,15 @@ function App() {
   const currentRoomData = rooms.find(room => room.id === currentRoom)
 
   return (
-    <div className="chat-container">
+    <div className="app-wrapper">
+      {/* 頂部選單 */}
+      <TopMenu 
+        onClearChat={handleClearChat}
+        messageCount={getMessageCount()}
+        currentRoom={currentRoomData?.name || currentRoom}
+      />
+      
+      <div className="chat-container">
       {/* 側邊欄 */}
       <div className="chat-sidebar">
         <div className="chat-header">
@@ -134,6 +259,7 @@ function App() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   )
 }
